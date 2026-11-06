@@ -2,46 +2,65 @@ import streamlit as st
 from teachable_machine import TeachableMachine
 from PIL import Image
 import time
+import cv2
+import numpy as np
 
 st.set_page_config(page_title="Station de Diagnostic - Metoushelah", page_icon="⚙️", layout="wide")
 
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap');
-    html, body, [class*="css"] {
-        font-family: 'Roboto', sans-serif;
-    }
-    .stButton>button {
-        border-radius: 5px;
-        font-weight: bold;
-    }
+    html, body, [class*="css"] { font-family: 'Roboto', sans-serif; }
+    .stButton>button { border-radius: 5px; font-weight: bold; }
     </style>
     """, unsafe_allow_html=True)
 
+connaissances_mecaniques = {
+    "normal": {
+        "titre": "✅ MOTEUR SAIN (Combustion optimale)",
+        "causes": "Aucune anomalie. Le mélange air/essence est idéal et l'étincelle est parfaite.",
+        "solutions": "Aucune intervention requise. Poursuivre l'entretien régulier.",
+        "couleur": "success"
+    },
+    "riche": {
+        "titre": "⚠️ MÉLANGE RICHE (Calaminée / Suie sèche)",
+        "causes": "Excès de carburant ou manque d'air. Dépôts noirs secs (suie).",
+        "solutions": "1. Remplacer le filtre à air.\n2. Nettoyer/Tester les injecteurs.\n3. Vérifier la sonde lambda.\n4. Contrôler le capteur de pression d'admission.",
+        "couleur": "warning"
+    },
+    "huile": {
+        "titre": "🚨 MOTEUR HUILEUX (Dépôts gras et humides)",
+        "causes": "L'huile moteur pénètre dans la chambre de combustion et brûle avec l'essence.",
+        "solutions": "1. Effectuer un test de compression (segments usés).\n2. Vérifier l'usure des guides de soupapes.\n3. Contrôler le système de ventilation du carter (PCV).\n4. Prévoir une révision mécanique lourde.",
+        "couleur": "error"
+    },
+    "pauvre": {
+        "titre": "⚠️ MÉLANGE PAUVRE (Surchauffe / Isolant blanc)",
+        "causes": "Manque de carburant ou excès d'air. Combustion trop chaude.",
+        "solutions": "1. Chercher une prise d'air (filtre, collecteur).\n2. Vérifier la pression de la pompe à carburant.\n3. Nettoyer les injecteurs bouchés.\n4. Vérifier le calage de l'allumage.",
+        "couleur": "warning"
+    },
+    "endommag": {
+        "titre": "❌ BOUGIE ENDOMMAGÉE / FONDUE",
+        "causes": "Surchauffe extrême ou détonation. Indice thermique inadapté.",
+        "solutions": "1. Remplacer impérativement la bougie par un modèle adapté.\n2. Vérifier l'avance à l'allumage.\n3. Contrôler le système de refroidissement.\n4. Vérifier la qualité du carburant.",
+        "couleur": "error"
+    }
+}
+
 with st.sidebar:
     st.image("https://cdn-icons-png.flaticon.com/512/2043/2043331.png", width=70)
-    
     st.divider()
-    
     st.markdown("📧 **Contact Professionnel**")
     st.markdown("[metoushelahmetoushelah@gmail.com](mailto:metoushelahmetoushelah@gmail.com)")
-    
     st.divider()
-    
-    st.markdown("🖥️ **Statut du Système**")
-    st.success("🟢 Moteur d'inférence IA : En ligne")
-    st.caption("Version du logiciel : v1.0.0")
-    
+    st.markdown("🖥️ **Système Expert & IA**")
+    st.success("🟢 Base de connaissances : Active")
+    st.caption("Version du logiciel : v2.4 (Calibrée)")
     st.divider()
-    
-    with st.expander("📋 Spécifications Techniques"):
-        st.write("- **Modèle :** CNN (Keras/TensorFlow)")
-        st.write("- **Entrée :** Image 224x224 px")
-        st.write("- **Classes :** 5 signatures de combustion")
-        st.write("- **Année :** 2026")
 
 st.title("⚙️ Station de Diagnostic Électromécanique")
-st.markdown("Analyse des signatures visuelles des bougies d'allumage par intelligence artificielle.")
+st.markdown("Analyse intelligente des bougies couplée aux manuels techniques d'atelier.")
 st.divider()
 
 @st.cache_resource
@@ -50,101 +69,115 @@ def load_model():
 
 model = load_model()
 
-col1, col2 = st.columns([1, 1.2], gap="large")
+col1, col2 = st.columns([1, 1.3], gap="large")
 
 with col1:
     st.subheader("📷 Module d'Acquisition")
-    uploaded_file = st.file_uploader("Insérez l'image de la bougie pour analyse...", type=["jpg", "jpeg", "png"])
-    
+    uploaded_file = st.file_uploader("Insérez l'image pour analyse...", type=["jpg", "jpeg", "png"])
     if uploaded_file is not None:
         image = Image.open(uploaded_file).convert("RGB")
-        st.image(image, caption="Échantillon en cours de traitement", use_container_width=True)
+        st.image(image, caption="Échantillon brut", use_container_width=True)
 
 with col2:
     st.subheader("📊 Rapport de Diagnostic")
-    
     if uploaded_file is not None:
         if st.button("⚡ Lancer l'analyse technique", type="primary", use_container_width=True):
-            
-            temp_path = "temp_image.jpg"
-            image.save(temp_path)
-            
-            with st.spinner("Traitement des données de combustion..."):
-                time.sleep(1.5)
+            with st.spinner("Analyse visuelle et croisement avec les manuels..."):
+                time.sleep(1)
                 try:
+                    img_array = np.array(image)
+                    img_bgr = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
+                    
+                    gris = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+                    luminosite_moyenne = np.mean(gris)
+                    
+                    if luminosite_moyenne > 100:
+                        final_img = img_bgr.copy()
+                    else:
+                        result_wb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
+                        avg_a = np.average(result_wb[:, :, 1])
+                        avg_b = np.average(result_wb[:, :, 2])
+                        result_wb[:, :, 1] = result_wb[:, :, 1] - ((avg_a - 128) * (result_wb[:, :, 1] / 255.0) * 0.8)
+                        result_wb[:, :, 2] = result_wb[:, :, 2] - ((avg_b - 128) * (result_wb[:, :, 2] / 255.0) * 0.8)
+                        img_corrected = cv2.cvtColor(result_wb, cv2.COLOR_LAB2BGR)
+                        
+                        lab = cv2.cvtColor(img_corrected, cv2.COLOR_BGR2LAB)
+                        l, a, b = cv2.split(lab)
+                        clahe = cv2.createCLAHE(clipLimit=1.0, tileGridSize=(8,8))
+                        cl = clahe.apply(l)
+                        limg = cv2.merge((cl,a,b))
+                        final_img = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
+
+                    final_img_rgb = cv2.cvtColor(final_img, cv2.COLOR_BGR2RGB)
+                    final_pil = Image.fromarray(final_img_rgb)
+                    
+                    temp_path = "temp_image.jpg"
+                    final_pil.save(temp_path)
+                    
                     result = model.classify_image(image_path=temp_path)
                     class_name = result["highest_class_name"].lower()
-                    confidence = result["highest_class_confidence"]
+                    confidence = float(result["highest_class_confidence"])
                     
-                    st.metric(label="Indice de confiance du modèle", value=f"{confidence * 100:.1f} %")
+                    gris_final = cv2.cvtColor(final_img, cv2.COLOR_BGR2GRAY)
+                    pixels_noirs = cv2.countNonZero(cv2.inRange(gris_final, 0, 70))
+                    densite_noire = pixels_noirs / gris_final.size
                     
-                    tab1, tab2 = st.tabs(["🔍 Diagnostic", "🛠️ Plan de Maintenance"])
+                    hsv_img = cv2.cvtColor(final_img, cv2.COLOR_BGR2HSV)
+                    saturation_moyenne = np.mean(hsv_img[:, :, 1])
                     
-                    rapport_texte = ""
+                    diagnostic_final = class_name
                     
-                    if "normal" in class_name:
-                        st.toast("✅ Moteur Sain - Combustion optimale", icon="⚙️")
-                        with tab1:
-                            st.success("**État de la bougie : NORMALE**")
-                            st.write("La couleur de l'isolant indique une combustion complète et équilibrée.")
-                        with tab2:
-                            st.info("**Action :** Aucune intervention requise. Poursuivre la maintenance standard.")
-                        rapport_texte = "Diagnostic: Normal\nAction: Aucune"
+                    # LE SEUIL EST PASSÉ À 0.03 (3%) ICI
+                    if ("pauvre" in class_name or "normal" in class_name) and densite_noire > 0.03:
+                        if saturation_moyenne > 60:
+                            diagnostic_final = "huile"
+                        else:
+                            diagnostic_final = "riche"
+                    elif "riche" in class_name and saturation_moyenne > 70:
+                        diagnostic_final = "huile"
+                    elif "huile" in class_name and saturation_moyenne < 30 and densite_noire > 0.05:
+                        diagnostic_final = "riche"
+                    
+                    st.metric(label="Indice de confiance", value=f"{confidence * 100:.1f} %")
+                    
+                    with st.expander("👁️ Détails de l'analyse visuelle"):
+                        st.image(final_pil, caption="Image optimisée par OpenCV", use_container_width=True)
+                        st.write(f"**Densité de calamine (Noir) :** {densite_noire * 100:.1f} %")
+                        st.write(f"**Indice de brillance/humidité :** {saturation_moyenne:.1f} (Élevé = Huileux)")
+                    
+                    if confidence < 0.60:
+                        st.warning("⚠️ **Image non concluante.** L'angle ou la lumière ne permet pas un diagnostic sûr.")
+                        st.info("Veuillez reprendre la photo en isolant bien la bougie sur fond neutre.")
+                        st.stop()
+                    
+                    fiche = connaissances_mecaniques.get("normal", connaissances_mecaniques["normal"])
+                    for key in connaissances_mecaniques.keys():
+                        if key in diagnostic_final:
+                            fiche = connaissances_mecaniques[key]
+                            break
                             
-                    elif "riche" in class_name or "carbon" in class_name or "fouled" in class_name:
-                        st.toast("⚠️ Alerte : Anomalie détectée", icon="🚨")
-                        with tab1:
-                            st.warning("**État de la bougie : MÉLANGE RICHE (Encrassée)**")
-                            st.error("**Causes probables :**\n- Filtre à air colmaté\n- Injecteur qui fuit\n- Sonde lambda défaillante")
-                        with tab2:
-                            st.write("**Actions correctives :**\n1. Contrôler le filtre à air.\n2. Tester les injecteurs.\n3. Diagnostiquer la sonde lambda.")
-                        rapport_texte = "Diagnostic: Mélange Riche\nAction: Contrôle admission/injection"
-                            
-                    elif "huile" in class_name or "oil" in class_name:
-                        st.toast("🚨 Danger : Usure interne", icon="⚠️")
-                        with tab1:
-                            st.error("**État de la bougie : HUILEUSE**")
-                            st.error("**Causes probables :**\n- Usure des segments de piston\n- Guides de soupapes usés")
-                        with tab2:
-                            st.write("**Actions correctives :**\n1. Test de compression.\n2. Inspection endoscopique.\n3. Révision mécanique.")
-                        rapport_texte = "Diagnostic: Huileuse\nAction: Test compression"
-                            
-                    elif "pauvre" in class_name or "lean" in class_name:
-                        st.toast("⚠️ Alerte : Surchauffe", icon="🌡️")
-                        with tab1:
-                            st.warning("**État de la bougie : MÉLANGE PAUVRE**")
-                            st.error("**Causes probables :**\n- Prise d'air\n- Injecteur bouché\n- Pompe faible")
-                        with tab2:
-                            st.write("**Actions correctives :**\n1. Test d'étanchéité.\n2. Contrôle pression carburant.\n3. Vérifier l'allumage.")
-                        rapport_texte = "Diagnostic: Mélange Pauvre\nAction: Contrôle prise d'air"
-                            
-                    elif "endommag" in class_name or "damage" in class_name:
-                        st.toast("🚨 Critique : Endommagée", icon="❌")
-                        with tab1:
-                            st.error("**État de la bougie : ENDOMMAGÉE / FONDUE**")
-                            st.error("**Causes probables :**\n- Surchauffe sévère\n- Indice thermique inadapté")
-                        with tab2:
-                            st.write("**Actions correctives :**\n1. Remplacer la bougie.\n2. Vérifier le calage.\n3. Contrôler le carburant.")
-                        rapport_texte = "Diagnostic: Endommagée\nAction: Remplacement"
+                    tab1, tab2 = st.tabs(["🔍 Diagnostic", "🛠️ Manuel de Maintenance"])
                     
-                    else:
-                        st.warning(f"**État détecté : {class_name}**")
-                        st.write("Anomalie non répertoriée.")
-                        rapport_texte = f"Diagnostic: {class_name}\nAction: A verifier"
+                    with tab1:
+                        if fiche["couleur"] == "success":
+                            st.success(f"**{fiche['titre']}**")
+                        elif fiche["couleur"] == "warning":
+                            st.warning(f"**{fiche['titre']}**")
+                        else:
+                            st.error(f"**{fiche['titre']}**")
+                            
+                        st.markdown("### 🔬 Causes identifiées :")
+                        st.info(fiche["causes"])
+                        
+                    with tab2:
+                        st.markdown("### 🔧 Protocole de réparation (Manuel) :")
+                        st.write(fiche["solutions"])
                     
                     st.divider()
                     
-                    st.download_button(
-                        label="📥 Télécharger le rapport de diagnostic",
-                        data=rapport_texte,
-                        file_name="rapport_diagnostic.txt",
-                        mime="text/plain",
-                        use_container_width=True
-                    )
-                        
-                    with st.expander("📈 Données brutes du réseau de neurones"):
-                        st.write(result["all_predictions"])
-                        
+                    rapport = f"RAPPORT DE DIAGNOSTIC\n\nÉtat: {fiche['titre']}\nConfiance: {confidence*100:.1f}%\n\nCauses: {fiche['causes']}\n\nSolutions:\n{fiche['solutions']}"
+                    st.download_button("📥 Télécharger le rapport technique", data=rapport, file_name="rapport_diagnostic.txt")
+                    
                 except Exception as e:
                     st.error(f"Erreur système : {e}")
     else:
