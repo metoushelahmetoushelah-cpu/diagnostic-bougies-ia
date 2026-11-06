@@ -1,5 +1,5 @@
 0 normal
 1 melange riche
-2 probleme d'huile 
-3 melange pauvre 
-4 endommagee
+2 melange pauvre
+3 endomagee
+4 probleme huile 
