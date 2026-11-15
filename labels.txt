@@ -1,5 +1,0 @@
-0 normal
-1 melange riche
-2 melange pauvre
-3 endomagee
-4 probleme huile 
