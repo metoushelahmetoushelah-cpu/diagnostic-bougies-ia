@@ -18,11 +18,10 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- SÉCURITÉ : Récupération de la clé API ---
 if "OPENROUTER_API_KEY" in st.secrets:
     api_key = st.secrets["OPENROUTER_API_KEY"]
 else:
-    st.error("⚠️ Clé API manquante. Veuillez configurer le fichier secrets.toml.")
+    st.error("⚠️ Clé API manquante. Veuillez configurer le fichier secrets.toml ou les Secrets Streamlit.")
     st.stop()
 
 client = OpenAI(
@@ -42,7 +41,7 @@ with st.sidebar:
     st.markdown("🖥️ **Architecture du Système**")
     st.success("🟢 Module d'Analyse Avancée : Actif")
     st.info("⚙️ Moteur d'inférence : En ligne")
-    st.caption("Version du logiciel : v12.0 (Sécurisée)")
+    st.caption("Version du logiciel : v12.1 (Finale)")
     st.divider()
     if st.button("🔄 Réinitialiser l'application", use_container_width=True):
         st.session_state.diagnostic_texte = None
@@ -54,7 +53,7 @@ st.divider()
 
 tab1, tab2 = st.tabs(["🔍 Nouveau Diagnostic", "📁 Historique des Interventions"])
 
-def creer_pdf(texte, nom_fichier):
+def creer_pdf(texte):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=15)
@@ -70,7 +69,7 @@ def creer_pdf(texte, nom_fichier):
         else:
             pdf.multi_cell(0, 10, txt=ligne_encodee)
             
-    pdf.output(nom_fichier)
+    return bytes(pdf.output())
 
 with tab1:
     col1, col2 = st.columns([1, 1.3], gap="large")
@@ -226,20 +225,16 @@ with tab1:
             st.markdown("### 📄 Exportation du Rapport")
             
             try:
-                nom_pdf = f"Rapport_{datetime.now().strftime('%H%M%S')}.pdf"
-                creer_pdf(texte_ia, nom_pdf)
-                
-                with open(nom_pdf, "rb") as pdf_file:
-                    pdf_data = pdf_file.read()
-                    
+                pdf_data = creer_pdf(texte_ia)
                 st.download_button(
                     label="📥 Télécharger le rapport en PDF",
                     data=pdf_data,
-                    file_name=nom_pdf,
+                    file_name=f"Rapport_{datetime.now().strftime('%H%M%S')}.pdf",
                     mime="application/pdf",
                     use_container_width=True
                 )
-            except Exception:
+            except Exception as e:
+                st.warning(f"Le PDF n'a pas pu être généré ({e}).")
                 st.download_button(
                     label="📥 Télécharger le rapport (Format Texte)",
                     data=texte_ia,
