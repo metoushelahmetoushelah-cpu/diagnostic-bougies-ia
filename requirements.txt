@@ -1,6 +1,4 @@
 streamlit
-tensorflow
 pillow
-teachable-machine
-opencv-python-headless
-numpy
+openai
+fpdf2
